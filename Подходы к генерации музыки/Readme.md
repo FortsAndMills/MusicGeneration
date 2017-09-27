@@ -8,10 +8,10 @@ http://www.datasciencecentral.com/profiles/blogs/using-machine-learning-to-gener
 
 ## Алгоритмическая генерация
 
-Автогенерация музыки
+Автогенерация музыки (rus!). Просто магия с паттернами, без обучения
 http://armaxis.ru/files/MusicGenerator.pdf
 
-Автогенерация идёт дальше
+На этом автогенерация не останавливается
 https://habrahabr.ru/post/185606/
 
 ## Связанные задачи
