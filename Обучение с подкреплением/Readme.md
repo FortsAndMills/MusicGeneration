@@ -22,7 +22,7 @@ http://neat-python.readthedocs.io/en/latest/
 
 http://www.natekohl.net/ut/pubs/papers/kohlgecco08.pdf
 
-# Ещё интересные ссылки
+## Ещё интересные ссылки по нейроэволюции
 
 Похоже, какой-то интересный складик
 
