@@ -2,6 +2,7 @@
 
 Описание основных инструментов алгоритмической генерации музыки
 http://www.asimovinstitute.org/analyzing-deep-learning-tools-music/
+
 Компиляция open-source проектов по генерации музыки сетями
 http://www.datasciencecentral.com/profiles/blogs/using-machine-learning-to-generate-music
 
@@ -9,10 +10,12 @@ http://www.datasciencecentral.com/profiles/blogs/using-machine-learning-to-gener
 
 Автогенерация музыки
 http://armaxis.ru/files/MusicGenerator.pdf
+
 Автогенерация идёт дальше
 https://habrahabr.ru/post/185606/
 
 ## Альтернативный подход через звуковые файлы
+
 Генерация музыкальных аудиформ
 https://cs224d.stanford.edu/reports/NayebiAran.pdf
 
