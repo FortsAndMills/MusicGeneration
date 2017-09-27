@@ -40,4 +40,5 @@
 # Булевоалгебраический подход
 
 Лаконичная интерпретация идеи от А.Думбая (2017):
+
 ![alt text](https://github.com/FortsAndMills/MusicGeneration/blob/master/Discon/Opinion.gif)
