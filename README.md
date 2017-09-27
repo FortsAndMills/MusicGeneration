@@ -37,3 +37,6 @@
 
 [Нейроэволюционный подход](https://github.com/FortsAndMills/MusicGeneration/tree/master/%D0%9D%D0%B5%D0%B9%D1%80%D0%BE%D1%8D%D0%B2%D0%BE%D0%BB%D1%8E%D1%86%D0%B8%D1%8F) хорош тем, что якобы умеет учиться нажимать кнопки (в данном случае - клавиши) в правильной последовательности. Однако пока что заставить его построить нейросеть, которая запомнит даже первые несколько тактов, [не удалось](https://github.com/FortsAndMills/MusicGeneration/tree/master/%D0%9D%D0%B5%D0%B9%D1%80%D0%BE%D1%8D%D0%B2%D0%BE%D0%BB%D1%8E%D1%86%D0%B8%D1%8F#ЭКСПЕРИМЕНТЫ) :( Возможно, я криворукий. 
 
+# Булевоалгебраический подход
+
+![alt text](https://github.com/FortsAndMills/MusicGeneration/blob/master/Discon/Opinion.gif)
