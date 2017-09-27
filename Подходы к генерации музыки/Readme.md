@@ -32,3 +32,6 @@ https://maraoz.com/2016/02/02/abc-rnn/
 
 Серьёзные результаты через RNN-LSTM-кроссэнтропия dropout боже амазон
 https://geektimes.ru/post/259958/
+
+Вот любопытный экземпляр, тут использовались эволюционные реккурентные сети:
+http://nn.cs.utexas.edu/downloads/papers/chen.ijcnn01.pdf
