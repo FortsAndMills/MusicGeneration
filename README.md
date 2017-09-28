@@ -46,3 +46,7 @@
 Для тех, кому лень смотреть презентацию, вот лаконичная интерпретация идеи от А.Думбая (2017):
 
 ![alt text](https://github.com/FortsAndMills/MusicGeneration/blob/master/Discon/Opinion.gif)
+
+# Нейросети слона-суицидника
+
+Составить описание происходящего [в этом разделе](https://github.com/FortsAndMills/MusicGeneration/tree/master/Elephant%20Neural%20Nets) ещё только предстоит...
