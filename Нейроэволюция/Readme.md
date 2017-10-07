@@ -23,6 +23,10 @@ http://www.natekohl.net/ut/pubs/papers/kohlgecco08.pdf
 
 ftp://ftp.vt.tpu.ru/study/Spitsyn/public/from%20Tzoy/Neuroevolution/lectures/
 
+Статья 2017 года по обучению нейронок "типа" генетическим (на самом деле, более банальным!) алгоритмом, которая сравнима по результатам с достижениями глубинок на Atari
+
+https://blog.openai.com/evolution-strategies/
+
 # ЭКСПЕРИМЕНТЫ:
 
 ## Готовая реализация под питон
