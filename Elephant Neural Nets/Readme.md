@@ -1,4 +1,5 @@
-Актуальный код в файле Binary Elephant.ipynb
+Актуальный код в файле Binary Elephant.ipynb и Binary Elephant - Variations.ipynb.
+Краткое саммари: всё ещё вешается.
 
 # Слоновьи нейросети...
 
