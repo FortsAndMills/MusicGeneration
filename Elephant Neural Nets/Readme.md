@@ -2,7 +2,7 @@
 
 (А. Думбай, 2017) Примерный путь развития слоновьих нейросеиток на примере выдр
 
-!(alt text)[https://github.com/FortsAndMills/MusicGeneration/blob/master/Elephant%20Neural%20Nets/Otters.gif]
+![alt text](https://github.com/FortsAndMills/MusicGeneration/blob/master/Elephant%20Neural%20Nets/Otters.gif)
 
 # Слоновьи нейросети...
 
