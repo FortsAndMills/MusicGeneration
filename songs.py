@@ -58,6 +58,16 @@ class Song:
                 if note >= 0 and note < 13:
                     self.notes[i][note] = 1
 
+    def noise(self, s):
+        for i in range(s):
+            t = np.random.randint(0, 128)
+            if self.notes[t].any():
+                add_note = np.random.uniform(0, 1) < 1 / self.notes[t].sum()
+                self.notes[t] = 0
+                self.notes[t][np.random.randint(0, 13)] = 1
+            else:
+                self.notes[t][np.random.randint(0, 13)] = 1
+
     # проиграть песню
     def play(self):
         for msg in MidiFile(self.name).play():
@@ -104,7 +114,7 @@ class MySong:
                 self.track.append(mido.Message('note_on', note=60 + i, velocity=64, time=self.time_passed))
                 self.time_passed = 0
                 self.release.append(i)
-        self.time_passed += 256
+        self.time_passed += 128
 
     # должна быть вызвана в конце создания файла
     def finish(self):
