@@ -8,4 +8,63 @@
 * Обработка однослойным LSTM-ом (300 нейронов).
 * На выходе 88 вероятностей, с которыми нужно засэмпировать очередную ноту.
 
-В принципе, это уже что-то. [](300 LSTM CM_dataset songs by fragments 8-history 12000 steps lr=0.01.mid)
+В принципе, это уже что-то. [300 LSTM CM_dataset songs by fragments 8-history 12000 steps lr=0.01.mid](https://github.com/FortsAndMills/MusicGeneration/blob/master/RealData%20First%20Model/%D0%A1%D0%B2%D0%B0%D0%BB%D0%BA%D0%B0%20%D1%8D%D0%BA%D1%81%D0%BF%D0%B5%D1%80%D0%B8%D0%BC%D0%B5%D0%BD%D1%82%D0%BE%D0%B2/300%20LSTM%20CM_dataset%20songs%20by%20fragments%208-history%2012000%20steps%20lr%3D0.01.mid)
+
+Однако, модель сэмплирования явно неадекватна с теоретической точки зрения. Допустим, на следующем шаге мы можем уйти, скажем, в до мажор и сыграть до-ми-соль, или в фа мажор, фа-ля-до. Идэал'ный генератор Распределения Музыки в текущем формате вывода засэмплирует до, и скажет, что ноты ми, соль, фа и ля должна засэмплироваться с вероятностями 50% каждая. Естественно, что с высокой вероятностью по такому выходу генерируется какая-то ерунда.
+
+Решение: сводить к сэмплированиям из дискретных распределений, т.е. брать на финальном слое софтмакс. Однако, как тогда сэмплировать больше одной ноты?
+
+### 06/12 (failed) - Первая модель полифонического сэмплирования
+(LSTM real data polyphonic model.ipynb) Проба старой идеи: на выходе сети выдаём вероятность p, из которого при генерации будет засэмплирована только одна нота. Затем подаём на вход LSTM-у тот же самый вектор, и вероятность p, получаем p2, из которого при генерации сэмплируем вторую ноту. Снова подаём на вход LSTM-у тот же вход, и p + (1 - p)p2... И так, скажем, 7 раз.
+
+"Время" от такого безобразия с точки зрения сети замедляется ещё в 7 раз, что уже само по себе плохо. С этим можно было бы бороться, но идея не выгорела - обучалось плохо (даже пришлось использовать "сжатое" представление до 12-мерных векторов), и генерировалась ерунда.
+
+### 09/12 (failed) - Проба LatencyLSTM
+(LatencyLSTM test.ipynb) Основная идея - в рекуррентных связях иметь не один элемент задержки, как это принято, а много... Например, 3, 7, 15, 31... Ну вы поняли. Однако, то ли я в реализации косячил, то ли ещё что, но заменить таким образом модель памяти (и таким образом, сильно упростить вычислительную сложность модели за счёт уменьшения размра входа с 88x9 до 88) не получалось - при обучении "повторы" не обнаруживались.
+
+Что объясняется таким странным фактом, что нужно "смотреть" на 3, 7 и т.д. моментов времени назад, когда период на самом деле 4, 8 и т.д. То есть в нейрон приходит его выход с момента времени, когда на входе был ныне искомый ответ, что означает, что нейрон должен был бы быть занят в тот момент тождественным преобразованием. Что означает, что он не может делать что-то ещё... Проблема распространяется и на LSTM, эксперименты с неединичными периодами с памятью закончились также. Вообще, нормальное решение этой проблемы может лежать в коррекции LSTM-формул, но...
+
+## 11/12 - "Одновременное" полифоническое сэмплирование
+[LSTM real data polyphonic one-time model.ipynb](https://github.com/FortsAndMills/MusicGeneration/blob/master/RealData%20First%20Model/%D0%A1%D0%B2%D0%B0%D0%BB%D0%BA%D0%B0%20%D1%8D%D0%BA%D1%81%D0%BF%D0%B5%D1%80%D0%B8%D0%BC%D0%B5%D0%BD%D1%82%D0%BE%D0%B2/LSTM%20real%20data%20polyphonic%20one-time%20model.ipynb)
+
+Нашлось простое и забавное решение проблемы с полифоническим сэмплированием. А давайте просто сгенерируем на выходе нейросети 7 дискретных 88-мерных распределений (точнее - 89-мерных, ещё один вариант это "пауза", не генерить ноту в этом "голосе")!
+
+Решение рабочее:
+[300 LSTM CM_dataset songs by fragments 8-history 7-voices 2500 steps lr=0.01.mid](https://github.com/FortsAndMills/MusicGeneration/blob/master/RealData%20First%20Model/%D0%A1%D0%B2%D0%B0%D0%BB%D0%BA%D0%B0%20%D1%8D%D0%BA%D1%81%D0%BF%D0%B5%D1%80%D0%B8%D0%BC%D0%B5%D0%BD%D1%82%D0%BE%D0%B2/300%20LSTM%20CM_dataset%20songs%20by%20fragments%208-history%207-voices%202500%20steps%20lr%3D0.01.mid)
+[300 LSTM CM_dataset songs by fragments 8-history 7-voices 2500 steps lr=0.01 ex.2.mid](https://github.com/FortsAndMills/MusicGeneration/blob/master/RealData%20First%20Model/%D0%A1%D0%B2%D0%B0%D0%BB%D0%BA%D0%B0%20%D1%8D%D0%BA%D1%81%D0%BF%D0%B5%D1%80%D0%B8%D0%BC%D0%B5%D0%BD%D1%82%D0%BE%D0%B2/300%20LSTM%20CM_dataset%20songs%20by%20fragments%208-history%2012000%20steps%20lr%3D0.01.mid)
+
+## 13/12 - "Метадообучение", а точнее пародия на него
+При генерации нейросеть ДООБУЧАЕТСЯ на том, что она сгенерировала.
+
+Это было бы метаобучением, очень вписывающимся в поставленную задачу, если бы веса сети (на момента старта генерации) подбирались с учётом дообучения по ходу последовательности. Несложно показать, что для этого нужен гессиан. Поэтому проба в костыльном варианте.
+
+Результаты... прикольные.
+[300 LSTM CM_dataset songs by fragments 8-history 7-voices 2500 steps lr=0.01 meta_learning=0.0001 1 iter from common.mid](https://github.com/FortsAndMills/MusicGeneration/blob/master/RealData%20First%20Model/%D0%A1%D0%B2%D0%B0%D0%BB%D0%BA%D0%B0%20%D1%8D%D0%BA%D1%81%D0%BF%D0%B5%D1%80%D0%B8%D0%BC%D0%B5%D0%BD%D1%82%D0%BE%D0%B2/300%20LSTM%20CM_dataset%20songs%20by%20fragments%208-history%207-voices%202500%20steps%20lr%3D0.01%20meta_learning%3D0.0001%201%20iter%20from%20common.mid)
+
+Однако, усиливается риск слиться в генерацию тривиальных последовательностей. Потенциально, метадообучение должно бороться с проблемой "смены песни каждые две секунды". Как и модель памяти...
+
+## 14/12 - Upgraded Version
+* Два слоя LSTM по 100 нейронов вместо одного из 300
+* На вход дополнительно подаётся время. Моё самодовольство от гениальности этого хода было уничтожено радостным обнаружением, что так давно уже все в генерации музыки делают.
+
+Результаты:
+[100-100 LSTM CM_dataset songs by fragments 8-history 6-times 7-voices (one-time) lr=0.01 40000 epochs.mid](https://github.com/FortsAndMills/MusicGeneration/blob/master/RealData%20First%20Model/%D0%A1%D0%B2%D0%B0%D0%BB%D0%BA%D0%B0%20%D1%8D%D0%BA%D1%81%D0%BF%D0%B5%D1%80%D0%B8%D0%BC%D0%B5%D0%BD%D1%82%D0%BE%D0%B2/100-100%20LSTM%20CM_dataset%20songs%20by%20fragments%208-history%206-times%207-voices%20(one-time)%20lr%3D0.01%2040000%20epochs.mid)
+
+### 15/12 - Вариации псевдометадообучения...
+C "метадообучением" Upgraded-модель выглядит... кхм, звучит так:
+[100-100 LSTM CM_dataset songs by fragments 8-history 7-voices 6-times 40000 steps lr=0.01 meta_learning=0.0001 1 iter from common.mid](https://github.com/FortsAndMills/MusicGeneration/blob/master/RealData%20First%20Model/%D0%A1%D0%B2%D0%B0%D0%BB%D0%BA%D0%B0%20%D1%8D%D0%BA%D1%81%D0%BF%D0%B5%D1%80%D0%B8%D0%BC%D0%B5%D0%BD%D1%82%D0%BE%D0%B2/100-100%20LSTM%20CM_dataset%20songs%20by%20fragments%208-history%207-voices%206-times%2040000%20steps%20lr%3D0.01%20meta_learning%3D0.0001%201%20iter%20from%20common.mid)
+
+Параметром, вообще, у этого дообучения много. В результате уловить разницу не получается; тем не менее, есть два принципиально разных подхода. Примеры выше были построены по принципу "при генерации очередного вектора сбрасываемся к выученным весам, а затем делаем 1 или несколько шагов обучения на сгенерированной последовательности". Альтернатива - обучаться с каждым новым вектором "всё дальше", то есть не сбрасываться к исходным весам на каждом шаге. Learning Rate при этом пришлось выкрутить совсем вниз.
+
+Результат: [100-100 LSTM CM_dataset songs by fragments 8-history 7-voices 6-times 40000 steps lr=0.01 moving_meta_learning=0.00001.mid](https://github.com/FortsAndMills/MusicGeneration/blob/master/RealData%20First%20Model/%D0%A1%D0%B2%D0%B0%D0%BB%D0%BA%D0%B0%20%D1%8D%D0%BA%D1%81%D0%BF%D0%B5%D1%80%D0%B8%D0%BC%D0%B5%D0%BD%D1%82%D0%BE%D0%B2/100-100%20LSTM%20CM_dataset%20songs%20by%20fragments%208-history%207-voices%206-times%2040000%20steps%20lr%3D0.01%20moving_meta_learning%3D0.00001.mid)
+
+### 16/12 - Capsuled Memory
+[LSTM real data capsuled polyphonic one-time model.ipynb](https://github.com/FortsAndMills/MusicGeneration/blob/master/RealData%20First%20Model/%D0%A1%D0%B2%D0%B0%D0%BB%D0%BA%D0%B0%20%D1%8D%D0%BA%D1%81%D0%BF%D0%B5%D1%80%D0%B8%D0%BC%D0%B5%D0%BD%D1%82%D0%BE%D0%B2/LSTM%20real%20data%20capsuled%20polyphonic%20one-time%20model.ipynb)
+Ещё одна старая идея. История, т.е. вектора с прошлых моментов, приходят каждый в свою капсулу (однослойный LSTM из всего 24 нейронов), параллельно, затем второй слой из 100 нейронов собирает уже выходы со всех 24x9 капсул. 
+
+Результаты были так себе, пример: [24for9-100 LSTM CM_dataset songs by fragments 8-history 6-times 7-voices (one-time) lr=0.001 15000 epochs.mid](https://github.com/FortsAndMills/MusicGeneration/blob/master/RealData%20First%20Model/%D0%A1%D0%B2%D0%B0%D0%BB%D0%BA%D0%B0%20%D1%8D%D0%BA%D1%81%D0%BF%D0%B5%D1%80%D0%B8%D0%BC%D0%B5%D0%BD%D1%82%D0%BE%D0%B2/24for9-100%20LSTM%20CM_dataset%20songs%20by%20fragments%208-history%206-times%207-voices%20(one-time)%20lr%3D0.001%2015000%20epochs.mid)
+
+#### 20/12 - теперь с метадообучением!
+Примеры в архиве; ситуацию  с этой моделью не изменило.
+
+## 19/12 - HistoryUser
