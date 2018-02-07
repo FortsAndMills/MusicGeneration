@@ -105,7 +105,7 @@ p += (1 - p) * p_i
 
 ## 29/12 - Итоговая Модель
 Код вроде аккуратно закомментирован, что особенно существенно в части с Conditional Polyphonic Sampling
-[LSTM real data HistoryUser polyphonic one-time model bigger dataset.ipynb](http://localhost:8888/notebooks/Documents/%D0%9C%D0%93%D0%A3/%D0%94%D1%8C%D1%8F%D0%BA%D0%BE%D0%BD%D0%BE%D0%B2%D1%89%D0%B8%D0%BD%D0%B0/RealData%20First%20Model/LSTM%20real%20data%20HistoryUser%20polyphonic%20one-time%20model%20bigger%20dataset.ipynb)
+[LSTM real data HistoryUser polyphonic one-time model bigger dataset.ipynb](https://github.com/FortsAndMills/MusicGeneration/blob/master/RealData%20First%20Model/LSTM%20real%20data%20HistoryUser%20polyphonic%20one-time%20model%20bigger%20dataset.ipynb)
 
 * - HistoryUser + Conditional Polyphonic Sampling + Decoder
 * "bigger dataset* - 12-мерные представления циклически рандомно смещаются для получения всех 12 инвариантных представлений одной и той же песенки в выборке. Эту плюшку позволяет получить декодер, без него с 88-мерными представлениями обучение я б не потянул.
