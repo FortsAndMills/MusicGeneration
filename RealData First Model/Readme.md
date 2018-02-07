@@ -58,7 +58,7 @@ C "метадообучением" Upgraded-модель выглядит... к�
 
 Результат: [100-100 LSTM CM_dataset songs by fragments 8-history 7-voices 6-times 40000 steps lr=0.01 moving_meta_learning=0.00001.mid](https://github.com/FortsAndMills/MusicGeneration/blob/master/RealData%20First%20Model/%D0%A1%D0%B2%D0%B0%D0%BB%D0%BA%D0%B0%20%D1%8D%D0%BA%D1%81%D0%BF%D0%B5%D1%80%D0%B8%D0%BC%D0%B5%D0%BD%D1%82%D0%BE%D0%B2/100-100%20LSTM%20CM_dataset%20songs%20by%20fragments%208-history%207-voices%206-times%2040000%20steps%20lr%3D0.01%20moving_meta_learning%3D0.00001.mid)
 
-### 16/12 - Capsuled Memory
+### 16/12 (failed) - Capsuled Memory
 [LSTM real data capsuled polyphonic one-time model.ipynb](https://github.com/FortsAndMills/MusicGeneration/blob/master/RealData%20First%20Model/%D0%A1%D0%B2%D0%B0%D0%BB%D0%BA%D0%B0%20%D1%8D%D0%BA%D1%81%D0%BF%D0%B5%D1%80%D0%B8%D0%BC%D0%B5%D0%BD%D1%82%D0%BE%D0%B2/LSTM%20real%20data%20capsuled%20polyphonic%20one-time%20model.ipynb)
 Ещё одна старая идея. История, т.е. вектора с прошлых моментов, приходят каждый в свою капсулу (однослойный LSTM из всего 24 нейронов), параллельно, затем второй слой из 100 нейронов собирает уже выходы со всех 24x9 капсул. 
 
