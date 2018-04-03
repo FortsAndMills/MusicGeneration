@@ -80,6 +80,6 @@
 
 # PyTorch
 
-Переписал на PyTorch. Oh my...
+Переписал на PyTorch. Oh my... Подробности [здесь](https://github.com/FortsAndMills/MusicGeneration/tree/master/PyTorch%20Experiments).
 
 
