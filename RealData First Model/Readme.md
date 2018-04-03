@@ -129,6 +129,34 @@ p += (1 - p) * p_i
 
 Результат: [5 Submit. Conditional Voices and HistoryUser Correct Pause-loss.mid](https://github.com/FortsAndMills/MusicGeneration/blob/master/RealData%20First%20Model/5%20%20Submit.%20Conditional%20Voices%20and%20HistoryUser%20Correct%20Pause-loss.mid)
 
+## Прочие эксперименты
+
+* попробованы варианты с другими датасетами. Существенных изменений нет; при обучении на TheGreats, сборнике классики, механизм внимания размывается.
+    * Код: [Other datasets](https://github.com/FortsAndMills/MusicGeneration/blob/master/RealData%20First%20Model/%D0%A1%D0%B2%D0%B0%D0%BB%D0%BA%D0%B0%20%D1%8D%D0%BA%D1%81%D0%BF%D0%B5%D1%80%D0%B8%D0%BC%D0%B5%D0%BD%D1%82%D0%BE%D0%B2/LSTM%20real%20data%20HistoryUser%20polyphonic%20one-time%20model%20OTHER%20DATASETS%20test.ipynb)
+* добавка History(t - 1) как инпут для контроллера получше разрезило распределение на считывание; сильно ситуацию не улучшило. А вообще, появилось ощущение, будто Reader понимает, что когда один из элементов History(t - 1) совпадает с x(t - 1), то это явный период и надо считывать соответствующую компоненту, а в остальных случаях тупит. Поэтому, при генерации вообще ничего путного из HistoryUser не выходит, поэтому вариант, технически, совсем к переобучению приводит.
+    * Код: [History as Input](https://github.com/FortsAndMills/MusicGeneration/blob/master/RealData%20First%20Model/%D0%A1%D0%B2%D0%B0%D0%BB%D0%BA%D0%B0%20%D1%8D%D0%BA%D1%81%D0%BF%D0%B5%D1%80%D0%B8%D0%BC%D0%B5%D0%BD%D1%82%D0%BE%D0%B2/LSTM%20real%20data%20HistoryUser%20polyphonic%20one-time%20model%20history%20as%20input.ipynb)
+* при этом дополнительные связи у 12 нейронов контроллера с аггрегирующим слоем, кажется, только дело портят, но непонятно.
+
+### 4096
+Такая простая мысль: давайте уберём всё это полифоническое сэмплирование и будем решать задачу... классификации на 4096 класса. Даже, по сути, меньше, раз больше там, чем 5 нот, одновременно не звучит, ну это где-то 2000 классов.
+
+* на базовом датасете привело к хорошим результатам! Явно было заметно использование выхода из модуля истории.
+    * Код: [LSTM real data HistoryUser 4096.ipynb](https://github.com/FortsAndMills/MusicGeneration/blob/master/RealData%20First%20Model/%D0%A1%D0%B2%D0%B0%D0%BB%D0%BA%D0%B0%20%D1%8D%D0%BA%D1%81%D0%BF%D0%B5%D1%80%D0%B8%D0%BC%D0%B5%D0%BD%D1%82%D0%BE%D0%B2/LSTM%20real%20data%20HistoryUser%204096.ipynb)
+    * Результат: [4096.mid](https://github.com/FortsAndMills/MusicGeneration/blob/master/RealData%20First%20Model/%D0%A1%D0%B2%D0%B0%D0%BB%D0%BA%D0%B0%20%D1%8D%D0%BA%D1%81%D0%BF%D0%B5%D1%80%D0%B8%D0%BC%D0%B5%D0%BD%D1%82%D0%BE%D0%B2/4096.mid), [4096 v.2.mid](https://github.com/FortsAndMills/MusicGeneration/blob/master/RealData%20First%20Model/%D0%A1%D0%B2%D0%B0%D0%BB%D0%BA%D0%B0%20%D1%8D%D0%BA%D1%81%D0%BF%D0%B5%D1%80%D0%B8%D0%BC%D0%B5%D0%BD%D1%82%D0%BE%D0%B2/4096%20v.2.mid)
+* на бОльших датасетах обучаться "не хочет" --- обучается плохо с соотв. результатом. Интересно, почему; контроллер опять размывает.
+
+По идее, можно в рамках "4096 возможных исходов" считать вероятности, исходя из результатов поголосового сэмплирования. Однако, для этого нужны хитрости с линалом. Итак, у нас есть батч размера b последовательностей размера t, для каждого момента генерируется матрица 5x13 вероятностей засэмплировать одну из 13 нот для каждого из 5 голосов; нужно перевести это в 4096 вероятностей всех возможных исходов. Для этого нужно перебирать много комбинаций; я нашёл фокус, позволяющий перебирать всего 32 комбинации для получения одной из 4096 вероятностей. Однако, матрица b x t x 32 x 13 x 4096 уже ни в какую память не влезает. Тем не менее, можно посчитать одну вероятность, b x t x 32 x 13, и таким образом считать вероятность, с которой модель выдаст один конкретный класс.
+
+Это позволяет считать правдоподобие, то есть вероятность, с которой модель выдаст именно тот класс, который написан в данных (он же один). При этом на выдачу для остальных 4095 классов "забивается", и неважно, какое на них распределение, что существенно, поскольку их всё-таки много, и правдоподобие вряд ли будет высоким.
+
+Код: [ML](https://github.com/FortsAndMills/MusicGeneration/blob/master/RealData%20First%20Model/%D0%A1%D0%B2%D0%B0%D0%BB%D0%BA%D0%B0%20%D1%8D%D0%BA%D1%81%D0%BF%D0%B5%D1%80%D0%B8%D0%BC%D0%B5%D0%BD%D1%82%D0%BE%D0%B2/LSTM%20real%20data%20HistoryUser%20polyphonic%20one-time%20model%20ML.ipynb)
+Результат: [ML.mid](https://github.com/FortsAndMills/MusicGeneration/blob/master/RealData%20First%20Model/%D0%A1%D0%B2%D0%B0%D0%BB%D0%BA%D0%B0%20%D1%8D%D0%BA%D1%81%D0%BF%D0%B5%D1%80%D0%B8%D0%BC%D0%B5%D0%BD%D1%82%D0%BE%D0%B2/ML.mid)
+
+Кросс-энтропию, для которой нужны все 4096 вероятностей, можно только приблизительно оценивать: например, сэмплированием для каждого батча случайных 100 комбинаций из 4096, для которых будет считаться 1 - вероятность её генерации; результат ещё хуже.
+
+Код: [TrueLoss](https://github.com/FortsAndMills/MusicGeneration/blob/master/RealData%20First%20Model/%D0%A1%D0%B2%D0%B0%D0%BB%D0%BA%D0%B0%20%D1%8D%D0%BA%D1%81%D0%BF%D0%B5%D1%80%D0%B8%D0%BC%D0%B5%D0%BD%D1%82%D0%BE%D0%B2/LSTM%20real%20data%20HistoryUser%20polyphonic%20one-time%20model%20TrueLoss.ipynb)
+Результат: [true loss.mid](https://github.com/FortsAndMills/MusicGeneration/blob/master/RealData%20First%20Model/%D0%A1%D0%B2%D0%B0%D0%BB%D0%BA%D0%B0%20%D1%8D%D0%BA%D1%81%D0%BF%D0%B5%D1%80%D0%B8%D0%BC%D0%B5%D0%BD%D1%82%D0%BE%D0%B2/true%20loss.mid)
+
 ## Основные выводы.
 * Выбранный датасет неадекватен.
 * Выбранное представление данных неадекватно.
@@ -165,6 +193,9 @@ p += (1 - p) * p_i
 
 Результаты: [Banning pauses and HAI.mid](https://github.com/FortsAndMills/MusicGeneration/blob/master/RealData%20First%20Model/Banning%20pauses%20and%20HAI.mid)
 
+Результат на чуть большем датасете, на котором уже начинат размывать аттеншн:
+[Banning Pauses CP dataset.mid](https://github.com/FortsAndMills/MusicGeneration/blob/master/RealData%20First%20Model/%D0%A1%D0%B2%D0%B0%D0%BB%D0%BA%D0%B0%20%D1%8D%D0%BA%D1%81%D0%BF%D0%B5%D1%80%D0%B8%D0%BC%D0%B5%D0%BD%D1%82%D0%BE%D0%B2/banning%20pauses%20and%20HAI%20-%20CP%20dataset.mid)
+
 ### Common Conditional
 
 Возможно использование одного и того же LSTM-а, побольше, вместо микролстма, с одними и теми же весами, просто перезапуская его для генерации нового голоса, зная результаты старого сэмплирования. Да, действительно, можно микролстмы заменить на один общий лстм побольше. Выглядит интереснее, позволяет, теоретически, делать больше голосов только за счёт времени.
@@ -182,7 +213,7 @@ p += (1 - p) * p_i
 Результаты: [7 Submit. Banning CommonConditionals no aposter - the Greats 1h (submit ver.).mid](https://github.com/FortsAndMills/MusicGeneration/blob/master/RealData%20First%20Model/7%20Submit.%20Banning%20CommonConditionals%20no%20aposter%20-%20the%20Greats%201h%20(submit%20ver.).mid)
 
 ## TODO в рамках всей модели
-* древняя нерешённая проблема:  attention как генеративная модель не работает: он включается, если копирование уже началось, но выдать, что надо начать копировать, он или не может, а если может, то выход HistoryInput учитывается слабо. В результате, массовые копирования в сэмплах отсутствуют.
+* древняя нерешённая проблема:  attention как генеративная модель не работает: он включается, если копирование уже началось, но выдать, что надо начать копировать, он или не может, а если может, то выход HistoryInput учитывается слабо. В результате, массовые копирования в сэмплах отсутствуют. Так, если убрать HistoryUser вообще, сильно на слух ничего не меняется, см. [No History.mid](https://github.com/FortsAndMills/MusicGeneration/blob/master/RealData%20First%20Model/%D0%A1%D0%B2%D0%B0%D0%BB%D0%BA%D0%B0%20%D1%8D%D0%BA%D1%81%D0%BF%D0%B5%D1%80%D0%B8%D0%BC%D0%B5%D0%BD%D1%82%D0%BE%D0%B2/Banning%20CommonConditionals%20no%20aposter%20no%20history.mid)
 * RBM на выходе декодера... извращение, но может стабилизировать чуть-чуть дело.
 * связать декодер с aggregation-слоем или, может, даже голосами, получив одну сеть.
 * вставить в декодер генератор громкости.
