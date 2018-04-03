@@ -221,4 +221,4 @@ p += (1 - p) * p_i
 
 # Далее - PyTorch
 
-Переезд на PyTorch открыл новые возможности - исследование TODO-шек и не только проводилось уже в нём.
+Переезд на PyTorch открыл новые возможности - исследование TODO-шек и не только проводилось [уже в нём](https://github.com/FortsAndMills/MusicGeneration/tree/master/PyTorch%20Experiments).
