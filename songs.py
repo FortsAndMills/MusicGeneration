@@ -2,75 +2,109 @@ import mido
 from mido import MidiFile
 import numpy as np
 import copy
+import math
+
+import matplotlib.pyplot as plt
 
 # для возможности прослушивания midi прямо в ноутбуке
-HEARING_PORT = mido.open_output()
+try:
+	HEARING_PORT = mido.open_output()
+except:
+	pass
 # для вывода массивов numpy целиком
 np.set_printoptions(threshold=np.nan)
+
+BASE_NOTE = 21  # номер нижней клавиши на реальной фортепианной клавиатуре
+KEYS = 88       # клавиш на клавиатуре
+FREQ = 4        # ticks for beat
 
 # класс мидифайла песни
 class Song:
     # Если в качестве name подана строка, то будет загружен миди файл с таким названием
-    # Если есть выход за рамки диапазона, то песня будет сдвинута (умное слово - транспонирована)
-    # Если такой возможности нет, песня будет помечена как некорректная, и нот в ней не будет
+    # Помимо строки может принимать массив, где числа от 0 до 88 соотв. нотам, иначе пауза    
+    
+    def __init__(self, data, finished=True, hold_mode=True):
+        self.correct = True  # пометка о том, что файл загрузился без ошибок.
+        self.hold_mode = hold_mode
 
-    # Помимо строки может принимать массив, где числа от 0 до 12 соотв. нотам, иначе пауза
-
-    def __init__(self, name):
-        self.name = name
-        self.correct = True
-        self.notes = np.zeros((128, 13), dtype=int)
-
-        if isinstance(name, str):
-            # проверка на то, что песня попадает в диапазон
-            maxnote = 0
-            minnote = 127
-            for msg in MidiFile(name):
-                if (msg.type == "note_on" and msg.velocity > 0):
-                    if msg.note < minnote:
-                        minnote = msg.note
-                    if msg.note > maxnote:
-                        maxnote = msg.note
-
-            # случай некорректного файла
-            if maxnote - minnote >= 13:
-                print("ERROR! out of range!")
+        if isinstance(data, str):            
+            self.name = data
+            self.notes = np.zeros((32, KEYS), dtype=int)
+            self.tempo_changes = 0
+            
+            # переводим в ноты
+            try:
+                self.mid = MidiFile(data)
+            except:
+                print(self.name, ": Error opening file with mido")
                 self.correct = False
                 return
+                       
+            for msg in self.mid:                
+                if msg.type == 'time_signature':
+                    if msg.denominator not in {2, 4, 8, 16} or msg.numerator not in {2, 4, 8, 16}:
+                        print(self.name, ": Error: bad signature ", msg.numerator, '/', msg.denominator)
+                        self.correct = False
+                        return
+                if msg.type == 'set_tempo':
+                    self.tempo_changes += 1 
+            
+            data_tracks = set()
+            for t_id, track in enumerate(self.mid.tracks):
+                absolute_time_passed = 0
+                pressed_keys = np.zeros((88))
+                
+                for msg in track:
+                    absolute_time_passed += msg.time     
+                    
+                    key_on = (msg.type == "note_on" and msg.velocity > 0)
+                    key_off = (msg.type == "note_off" or (msg.type == "note_on" and msg.velocity == 0))
+                    if key_on or key_off:   
+                        data_tracks.add(t_id)                     
+                        t = round(absolute_time_passed * FREQ / self.mid.ticks_per_beat)
 
-            # вычисляем необходимый сдвиг
-            shift = 0
-            if minnote < 60:
-                shift = 60 - minnote
-            if maxnote >= 60 + 13:
-                shift = 60 + 13 - 1 - maxnote
-
-            # переводим в ноты
-            absolute_time_passed = 0
-            for msg in MidiFile(name):
-                absolute_time_passed += msg.time
-
-                if (msg.type == "note_on" and msg.velocity > 0):
-                    self.notes[round(absolute_time_passed / 0.25)][msg.note - 60 + shift] = 1
+                        while t >= len(self.notes):
+                            if self.hold_mode:
+                                self.notes = np.vstack([self.notes, np.zeros((32, 88), dtype=int)])
+                            else:
+                                self.notes = np.vstack([self.notes, np.tile(self.notes[-1][None], (32, 1))])
+                        
+                        if (msg.note - BASE_NOTE < 0 or msg.note - BASE_NOTE >= 88):
+                            print(self.name, ": ERROR: note out of range, ", msg.note, msg.note - BASE_NOTE)
+                            self.correct=False
+                            return
+                        
+                        if self.hold_mode:
+                            self.notes[t, msg.note - BASE_NOTE] = msg.velocity*key_on
+                        else:
+                            self.notes[t:, msg.note - BASE_NOTE] = msg.velocity*key_on
+            
+            if len(data_tracks) > 2:
+                print(self.name, ": Error: must be one (or two for two hands) track only")
+                self.correct = False
+                return
+            
+            self.notes = self.notes[self.notes.sum(axis=1).nonzero()[0][0]:]
         else:
-            # парсим "массив нот"
-            for i, note in enumerate(name):
-                if note >= 0 and note < 13:
-                    self.notes[i][note] = 1
+            self.name = "Generated song!"
+            self.notes = np.zeros((0, KEYS))
 
-    def noise(self, s):
-        for i in range(s):
-            t = np.random.randint(0, 128)
-            if self.notes[t].any():
-                add_note = np.random.uniform(0, 1) < 1 / self.notes[t].sum()
-                self.notes[t] = 0
-                self.notes[t][np.random.randint(0, 13)] = 1
-            else:
-                self.notes[t][np.random.randint(0, 13)] = 1
+            self.mid = MidiFile(type=0)
+            self.track = mido.MidiTrack()
+            self.mid.tracks.append(self.track)
+
+            self.time_passed = 0
+            self.release = []
+
+            for line in data:
+                self.add(line)
+
+            if finished:
+                self.finish()
 
     # проиграть песню
     def play(self):
-        for msg in MidiFile(self.name).play():
+        for msg in self.mid.play():
             HEARING_PORT.send(msg)
 
     # транспонирование мелодии
@@ -82,51 +116,49 @@ class Song:
 
         self.notes = np.hstack([self.notes[:, -shift:], self.notes[:, :-shift]])
         return True
+    
+    def drawSong(song, scale=(None, None)):
+        if scale[0] is None:
+            scale = (song.notes.shape[0] / 10, song.notes.shape[1] / 10)
 
-# Класс для создания нового миди файла
-class MySong:
-    def __init__(self, played_lines=[]):
-        self.notes = np.zeros((0, 13))
-
-        self.mid = MidiFile()
-        self.track = mido.MidiTrack()
-        self.mid.tracks.append(self.track)
-
-        self.time_passed = 0
-        self.release = []
-
-        for line in played_lines:
-            self.add(line)
+        plt.figure(figsize=scale)
+        plt.title(song.name)
+        plt.imshow(song.notes.T, aspect='auto', origin='lower')
+        plt.xlabel("time")
+        plt.xticks(np.arange(0, song.notes.shape[0], 4))
+        plt.show()
 
     # добавление новых строк в ноты
     def add(self, played):
         self.notes = np.vstack([self.notes, played])
 
         # "отпуск" нот, сыгранных долю назад
-        for i in self.release:
-            self.track.append(mido.Message('note_off', note=60 + i, velocity=64, time=self.time_passed))
-            self.time_passed = 0
-        self.release = []
+        if self.hold_mode and played.sum() > 0:
+            for i in self.release:
+                self.track.append(mido.Message('note_on', note=BASE_NOTE + i, velocity=0, time=self.time_passed))
+                self.time_passed = 0
+            self.release = []
 
         # добавление новых нот
         for i, key in enumerate(played):
-            if key == 1:
-                self.track.append(mido.Message('note_on', note=60 + i, velocity=64, time=self.time_passed))
+            if key > 0:
+                if i not in self.release:
+                    self.track.append(mido.Message('note_on', note=BASE_NOTE + i, velocity=key, time=self.time_passed))
+                    self.time_passed = 0
+                    self.release.append(i)
+            elif not self.hold_mode and i in self.release:
+                self.track.append(mido.Message('note_on', note=BASE_NOTE + i, velocity=0, time=self.time_passed))
                 self.time_passed = 0
-                self.release.append(i)
-        self.time_passed += 128
+                self.release.remove(i)
+                
+        self.time_passed += self.mid.ticks_per_beat // FREQ
 
     # должна быть вызвана в конце создания файла
     def finish(self):
         for i in self.release:
-            self.track.append(mido.Message('note_off', note=60 + i, velocity=64, time=self.time_passed))
+            self.track.append(mido.Message('note_off', note=BASE_NOTE + i, velocity=64, time=self.time_passed))
             self.time_passed = 0
-        self.track.append(mido.Message('note_off', note=60, velocity=0, time=self.time_passed))
-
-    # воспроизведение
-    def play(self):
-        for msg in self.mid.play():
-            HEARING_PORT.send(msg)
+        self.track.append(mido.Message('note_off', note=BASE_NOTE, velocity=0, time=self.time_passed))
 
     # сохранение
     def save_file(self, name):
